@@ -37,6 +37,7 @@
                                              selector:@selector(audioSessionRouteChangeNotification:)
                                                  name:AVAudioSessionRouteChangeNotification
                                                object:nil];
+    
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(applicationWillResignActiveNotification)
                                                  name:UIApplicationWillResignActiveNotification

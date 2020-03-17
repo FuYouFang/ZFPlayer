@@ -334,6 +334,9 @@
     
     [self setImage:holder isFromCache:YES];
     
+#warning 失败之后，应该谁负责重试？
+#warning 超过最大尝试次数之后，也不会调用 completion 了
+    
     if ([[UIApplication sharedApplication] zf_failTimesForRequest:theRequest] >= self.attemptToReloadTimesForFailedURL) {
         return;
     }
