@@ -167,9 +167,8 @@
     if ([[NSFileManager defaultManager] fileExistsAtPath:directoryPath isDirectory:nil]) {
         dispatch_queue_t ioQueue = dispatch_queue_create("com.hackemist.SDWebImageCache", DISPATCH_QUEUE_SERIAL);
         dispatch_async(ioQueue, ^{
-            NSError *error = nil;
             // 先删除整个目录，然后再创建一个空的文件夹
-            [[NSFileManager defaultManager] removeItemAtPath:directoryPath error:&error];
+            [[NSFileManager defaultManager] removeItemAtPath:directoryPath error:nil];
             [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath
                                       withIntermediateDirectories:YES
                                                        attributes:nil
