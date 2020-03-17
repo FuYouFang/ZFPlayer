@@ -33,18 +33,25 @@
                          finished:(ZFDownLoadDataCallBack)finished {
     self.progressBlock = progress;
     self.callbackOnFinished = finished;
-    
-    if ([NSURL URLWithString:url] == nil) {
+    NSURL *URL = [NSURL URLWithString:url];
+    if (URL == nil) {
         if (finished) { finished(nil, nil); }
         return;
     }
     
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]
-                                                           cachePolicy:NSURLRequestReturnCacheDataElseLoad
-                                                       timeoutInterval:60];
+    /*
+     NSURLRequestReturnCacheDataElseLoad
+     从缓存中获取数据，忽略掉他的过期时间。
+     如果没有，则进行网络请求
+     */
+    NSMutableURLRequest *request =
+    [NSMutableURLRequest requestWithURL:URL
+                            cachePolicy:NSURLRequestReturnCacheDataElseLoad
+                        timeoutInterval:60];
+    
     [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
     NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSOperationQueue *queue = [[NSOperationQueue alloc]init];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     self.session = [NSURLSession sessionWithConfiguration:config
                                                  delegate:self
                                             delegateQueue:queue];
@@ -53,6 +60,7 @@
     self.task = task;
 }
 
+// MARK: NSURLSessionDownloadDelegate
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
     NSData *data = [NSData dataWithContentsOfURL:location];
     
@@ -104,7 +112,7 @@
 
 + (NSString *)zf_cachePath {
     NSString *cachePath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-    NSString *directoryPath = [NSString stringWithFormat:@"%@/%@/%@",cachePath,@"default",@"com.hackemist.SDWebImageCache.default"];
+    NSString *directoryPath = [NSString stringWithFormat:@"%@/%@/%@", cachePath, @"default", @"com.hackemist.SDWebImageCache.default"];
     return directoryPath;
 }
 
@@ -160,6 +168,7 @@
         dispatch_queue_t ioQueue = dispatch_queue_create("com.hackemist.SDWebImageCache", DISPATCH_QUEUE_SERIAL);
         dispatch_async(ioQueue, ^{
             NSError *error = nil;
+            // 先删除整个目录，然后再创建一个空的文件夹
             [[NSFileManager defaultManager] removeItemAtPath:directoryPath error:&error];
             [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath
                                       withIntermediateDirectories:YES

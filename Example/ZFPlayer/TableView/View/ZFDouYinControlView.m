@@ -158,7 +158,7 @@
         _sliderView.minimumTrackTintColor = [UIColor whiteColor];
         _sliderView.bufferTrackTintColor  = [UIColor clearColor];
         _sliderView.sliderHeight = 1;
-        _sliderView.isHideSliderBlock = NO;
+        _sliderView.isHideSliderBlock = YES;
     }
     return _sliderView;
 }

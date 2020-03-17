@@ -127,10 +127,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSTimeInterval bufferTime;
 
 /// The player progress, 0...1
-@property (nonatomic, readonly) float progress;
+@property (nonatomic, readonly) CGFloat progress;
 
 /// The player bufferProgress, 0...1
-@property (nonatomic, readonly) float bufferProgress;
+@property (nonatomic, readonly) CGFloat bufferProgress;
 
 /**
  Use this method to seek to a specified time for the current player and to be notified when the seek operation is complete.

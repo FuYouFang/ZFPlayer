@@ -139,6 +139,7 @@ typedef NS_ENUM(NSInteger, ZFPlayerScalingMode) {
 /// The block invoked when the player play failed.
 @property (nonatomic, copy, nullable) void(^playerPlayFailed)(id<ZFPlayerMediaPlayback> asset, id error);
 
+/// 播放停止的通知
 /// The block invoked when the player play end.
 @property (nonatomic, copy, nullable) void(^playerDidToEnd)(id<ZFPlayerMediaPlayback> asset);
 

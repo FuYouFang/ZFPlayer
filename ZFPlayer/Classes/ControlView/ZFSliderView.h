@@ -28,13 +28,13 @@
 
 @optional
 // 滑块滑动开始
-- (void)sliderTouchBegan:(float)value;
+- (void)sliderTouchBegan:(CGFloat)value;
 // 滑块滑动中
-- (void)sliderValueChanged:(float)value;
+- (void)sliderValueChanged:(CGFloat)value;
 // 滑块滑动结束
-- (void)sliderTouchEnded:(float)value;
+- (void)sliderTouchEnded:(CGFloat)value;
 // 滑杆点击
-- (void)sliderTapped:(float)value;
+- (void)sliderTapped:(CGFloat)value;
 
 @end
 
@@ -85,9 +85,6 @@
 /** 设置滑杆的高度 */
 @property (nonatomic, assign) CGFloat sliderHeight;
 
-/** 设置滑杆的圆角 */
-@property (nonatomic, assign) CGFloat sliderRadius;
-
 /** 是否隐藏滑块（默认为NO） */
 @property (nonatomic, assign) BOOL isHideSliderBlock;
 
@@ -109,10 +106,16 @@
  */
 - (void)stopAnimating;
 
+- (void)setSliderProgress:(CGFloat)progress animated:(BOOL)animated;
+
+- (void)setBufferProgress:(CGFloat)progress animated:(BOOL)animated;
+
 // 设置滑块背景色
 - (void)setBackgroundImage:(UIImage *)image forState:(UIControlState)state;
 
 // 设置滑块图片
 - (void)setThumbImage:(UIImage *)image forState:(UIControlState)state;
+
+
 
 @end

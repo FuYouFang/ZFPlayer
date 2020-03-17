@@ -75,6 +75,8 @@ static NSString *const kPresentationSize         = @"presentationSize";
     self.avLayer.player = player;
 }
 
+/// 拉伸模式
+/// @param videoGravity 拉伸模式
 - (void)setVideoGravity:(AVLayerVideoGravity)videoGravity {
     if (videoGravity == self.videoGravity) return;
     [self avLayer].videoGravity = videoGravity;
@@ -165,7 +167,9 @@ static NSString *const kPresentationSize         = @"presentationSize";
     [self.player pause];
     self->_isPlaying = NO;
     self.playState = ZFPlayerPlayStatePaused;
+    #warning 取消所有等待的查询请求，如果存在相应的处理程序，则进行调用。
     [_playerItem cancelPendingSeeks];
+    #warning 取消所有观察者的所有值
     [_asset cancelLoading];
 }
 
@@ -175,6 +179,7 @@ static NSString *const kPresentationSize         = @"presentationSize";
     self.playState = ZFPlayerPlayStatePlayStopped;
     if (self.player.rate != 0) [self.player pause];
     [self.player removeTimeObserver:_timeObserver];
+    #warning 将当前的 AVPlayerItem 替换为新指定的值
     [self.player replaceCurrentItemWithPlayerItem:nil];
     _timeObserver = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:_itemEndObserver name:AVPlayerItemDidPlayToEndTimeNotification object:self.playerItem];
@@ -207,16 +212,19 @@ static NSString *const kPresentationSize         = @"presentationSize";
     }
 }
 
+#warning 获取图片时，先尝试获取准确的时间，如果失败，则将时间范围扩大
 - (UIImage *)thumbnailImageAtCurrentTime {
     AVAssetImageGenerator *imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:_asset];
     CMTime expectedTime = _playerItem.currentTime;
     CGImageRef cgImage = NULL;
     
+#warning 下面两个参数为限制采集图片的时间范围，默认值为 kCMTimePositiveInfinity，时间范围为 [requestedTime-toleranceBefore, requestedTime+toleranceAfter]
     imageGenerator.requestedTimeToleranceBefore = kCMTimeZero;
     imageGenerator.requestedTimeToleranceAfter = kCMTimeZero;
     cgImage = [imageGenerator copyCGImageAtTime:expectedTime actualTime:NULL error:NULL];
     
     if (!cgImage) {
+#warning kCMTimePositiveInfinity 此常量表示正无穷。不要使用 time == kCMTimePositiveInfinity 进行测试，因为除了这个值，还有其他值可以表示正无穷，测试时可以使用 CMTIME_IS_POSITIVEINFINITY(time)
         imageGenerator.requestedTimeToleranceBefore = kCMTimePositiveInfinity;
         imageGenerator.requestedTimeToleranceAfter = kCMTimePositiveInfinity;
         cgImage = [imageGenerator copyCGImageAtTime:expectedTime actualTime:NULL error:NULL];
@@ -234,6 +242,7 @@ static NSString *const kPresentationSize         = @"presentationSize";
     CMTime currentTime = [_player currentTime];
     BOOL foundRange = NO;
     CMTimeRange aTimeRange = {0};
+    
     if (timeRangeArray.count) {
         aTimeRange = [[timeRangeArray objectAtIndex:0] CMTimeRangeValue];
         if (CMTimeRangeContainsTime(aTimeRange, currentTime)) {
@@ -261,19 +270,23 @@ static NSString *const kPresentationSize         = @"presentationSize";
     presentView.player = _player;
     self.scalingMode = _scalingMode;
     if (@available(iOS 9.0, *)) {
+        #warning 在暂停的时候不用实时更新流状态
         _playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = NO;
     }
     if (@available(iOS 10.0, *)) {
+        #warning 缓存的时间长度
         _playerItem.preferredForwardBufferDuration = 5;
+        #warning 是否允许以指定的速率延迟播放，以减少卡顿
         _player.automaticallyWaitsToMinimizeStalling = NO;
     }
     [self itemObserving];
 }
 
 /// Playback speed switching method
-- (void)enableAudioTracks:(BOOL)enable inPlayerItem:(AVPlayerItem*)playerItem {
-    for (AVPlayerItemTrack *track in playerItem.tracks){
+- (void)enableAudioTracks:(BOOL)enable inPlayerItem:(AVPlayerItem *)playerItem {
+    for (AVPlayerItemTrack *track in playerItem.tracks) {
         if ([track.assetTrack.mediaType isEqual:AVMediaTypeVideo]) {
+            #warning track.enabled 在播放过程中是否展示 track 的布尔值
             track.enabled = enable;
         }
     }
@@ -292,7 +305,9 @@ static NSString *const kPresentationSize         = @"presentationSize";
     // 需要先暂停一小会之后再播放，否则网络状况不好的时候时间在走，声音播放不出来
     [self.player pause];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        // 如果此时用户已经暂停了，则不再需要开启播放了
+        // 如果此时 1. 用户已经暂停了，2. 并且有卡停了
+        // 则不再需要开启播放了
+#warning self.loadState == ZFPlayerLoadStateStalled 是咋回事
         if (!self.isPlaying && self.loadState == ZFPlayerLoadStateStalled) {
             self.isBuffering = NO;
             return;
@@ -300,6 +315,7 @@ static NSString *const kPresentationSize         = @"presentationSize";
         [self play];
         // 如果执行了play还是没有播放则说明还没有缓存好，则再次缓存一段时间
         self.isBuffering = NO;
+#warning isPlaybackLikelyToKeepUp 指示该项目是否可以在不停顿的情况下播放
         if (!self.playerItem.isPlaybackLikelyToKeepUp) [self bufferingSomeSecond];
     });
 }
@@ -328,12 +344,17 @@ static NSString *const kPresentationSize         = @"presentationSize";
                               options:NSKeyValueObservingOptionNew
                               context:nil];
     
+    // NSEC_PER_SEC: The number of nanoseconds in one second.
+
     CMTime interval = CMTimeMakeWithSeconds(self.timeRefreshInterval > 0 ? self.timeRefreshInterval : 0.1, NSEC_PER_SEC);
     @weakify(self)
+    #warning 每隔多长时间调用一次 block，报告当前的播放进度
+    // - (id)addPeriodicTimeObserverForInterval:(CMTime)interval queue:(nullable dispatch_queue_t)queue usingBlock:(void (^)(CMTime time))block;
     _timeObserver = [self.player addPeriodicTimeObserverForInterval:interval queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
         @strongify(self)
         if (!self) return;
         NSArray *loadedRanges = self.playerItem.seekableTimeRanges;
+#warning loadState == ZFPlayerLoadStateStalled 是怎么个意思？
         if (self.isPlaying && self.loadState == ZFPlayerLoadStateStalled) self.player.rate = self.rate;
         if (loadedRanges.count > 0) {
             if (self.playerPlayTimeChanged) self.playerPlayTimeChanged(self, self.currentTime, self.totalTime);
@@ -370,16 +391,19 @@ static NSString *const kPresentationSize         = @"presentationSize";
                 }
             } else if (self.player.currentItem.status == AVPlayerItemStatusFailed) {
                 self.playState = ZFPlayerPlayStatePlayFailed;
+#warning 获取当前的播放错误信息
                 NSError *error = self.player.currentItem.error;
                 if (self.playerPlayFailed) self.playerPlayFailed(self, error);
             }
         } else if ([keyPath isEqualToString:kPlaybackBufferEmpty]) {
+#warning playbackBufferEmpty 是否已经播放了所有的缓存资源，播放状态将会停止或者结束
             // When the buffer is empty
             if (self.playerItem.playbackBufferEmpty) {
                 self.loadState = ZFPlayerLoadStateStalled;
                 [self bufferingSomeSecond];
             }
         } else if ([keyPath isEqualToString:kPlaybackLikelyToKeepUp]) {
+#warning playbackLikelyToKeepUp 播放资源已经准备好，可以进行播放，而不停顿
             // When the buffer is good
             if (self.playerItem.playbackLikelyToKeepUp) {
                 self.loadState = ZFPlayerLoadStatePlayable;
@@ -415,6 +439,7 @@ static NSString *const kPresentationSize         = @"presentationSize";
 
 - (NSTimeInterval)totalTime {
     NSTimeInterval sec = CMTimeGetSeconds(self.player.currentItem.duration);
+#warning isnan isNaN
     if (isnan(sec)) {
         return 0;
     }
