@@ -59,7 +59,7 @@ typedef NS_ENUM(NSInteger, ZFPlayerScalingMode) {
 @optional
 /// The player volume.
 /// Only affects audio volume for the player instance and not for the device.
-/// You can change device volume or player volume as needed,change the player volume you can folllow the `ZFPlayerMediaPlayback` protocol.
+/// You can change device volume or player volume as needed, change the player volume you can follow the `ZFPlayerMediaPlayback` protocol.
 @property (nonatomic) float volume;
 
 /// The player muted.
